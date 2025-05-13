@@ -2,6 +2,17 @@
 require_once '../db.php';
 
 $stmt = $pdo->query("SELECT * FROM TBL_Pedidos ORDER BY id_pedido DESC");
+
+function obtenerProductosPorPedido($pdo, $id_pedido)
+{
+    $sql = "SELECT P.nombre_producto, PP.cantidad 
+            FROM TBL_Rel_Pedidos_Productos PP
+            INNER JOIN TBL_Productos P ON PP.id_producto = P.id_producto
+            WHERE PP.id_pedido = ?";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute(array($id_pedido));
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
 ?>
 
 <!DOCTYPE html>
@@ -37,8 +48,8 @@ $stmt = $pdo->query("SELECT * FROM TBL_Pedidos ORDER BY id_pedido DESC");
                         <thead class="table-light">
                             <tr>
                                 <th scope="col">ID</th>
-                                <th scope="col">ID Usuario</th>
-                                <th scope="col">Costo</th>
+                                <th scope="col">Productos</th>
+                                <th scope="col">Cantidad</th>
                                 <th scope="col">Ciudad</th>
                                 <th scope="col">Estado</th>
                                 <th scope="col">Fecha</th>
@@ -47,29 +58,47 @@ $stmt = $pdo->query("SELECT * FROM TBL_Pedidos ORDER BY id_pedido DESC");
                             </tr>
                         </thead>
                         <tbody>
-                            <?php while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) { ?>
+                            <?php while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                                $productos = obtenerProductosPorPedido($pdo, $row['id_pedido']);
+                                ?>
                                 <tr>
                                     <td><?php echo $row['id_pedido']; ?></td>
-                                    <td><?php echo $row['id_usuario']; ?></td>
+
+                                    <td colspan="2" class="p-0">
+                                        <table class="table table-borderless mb-0">
+                                            <?php foreach ($productos as $producto) { ?>
+                                                <tr>
+                                                    <td><?php echo htmlspecialchars($producto['nombre_producto']); ?></td>
+                                                    <td><?php echo $producto['cantidad']; ?></td>
+                                                </tr>
+                                            <?php } ?>
+                                        </table>
+                                    </td>
+
+
+
                                     <td>$<?php echo number_format($row['costo_pedido'], 2); ?></td>
-                                    <td><?php echo $row['ciudad_pedido']; ?></td>
-                                    <td><?php echo $row['estado_pedido']; ?></td>
+                                    <td><?php echo htmlspecialchars($row['ciudad_pedido']); ?></td>
+                                    <td><?php echo htmlspecialchars($row['estado_pedido']); ?></td>
                                     <td><?php echo $row['fecha_pedido']; ?></td>
                                     <td><?php echo $row['hora_pedido']; ?></td>
                                     <td>
                                         <div class="dropdown">
-                                            <button class="btn btn-sm btn-light border-0" type="button" data-bs-toggle="dropdown">
+                                            <button class="btn btn-sm btn-light border-0" type="button"
+                                                data-bs-toggle="dropdown">
                                                 <i class="bi bi-three-dots-vertical"></i>
                                             </button>
                                             <ul class="dropdown-menu">
                                                 <li>
-                                                    <a class="dropdown-item" href="editar.php?edit_id=<?php echo $row['id_pedido']; ?>">
+                                                    <a class="dropdown-item"
+                                                        href="editar.php?edit_id=<?php echo $row['id_pedido']; ?>">
                                                         <i class="bi bi-pencil-square me-1"></i> Editar
                                                     </a>
                                                 </li>
                                                 <li>
-                                                    <a class="dropdown-item text-danger" href="eliminar.php?delete_id=<?php echo $row['id_pedido']; ?>"
-                                                       onclick="return confirm('¿Seguro que deseas eliminar este pedido?')">
+                                                    <a class="dropdown-item text-danger"
+                                                        href="eliminar.php?delete_id=<?php echo $row['id_pedido']; ?>"
+                                                        onclick="return confirm('¿Seguro que deseas eliminar este pedido?')">
                                                         <i class="bi bi-trash3 me-1"></i> Eliminar
                                                     </a>
                                                 </li>
